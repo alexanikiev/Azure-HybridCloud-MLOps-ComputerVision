@@ -17,5 +17,5 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     - name: run job
       run: |
-          bash -x ../../../../run-job.sh pipeline.yml
+          bash -x ../../../cli/run-job.sh pipeline.yml
       working-directory: src/pipelines/tmp_pipeline
