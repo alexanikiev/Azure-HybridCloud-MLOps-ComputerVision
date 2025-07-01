@@ -1,0 +1,11 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+experiment_name: model-registration-pipeline
+description: Pipeline to register model to Azure ML Model Registry
+settings:
+  default_compute: azureml:cpu-cluster
+  continue_on_step_failure: false
+jobs:
+  register_model:
+    type: pipeline
+    component: ./components/component.yml
