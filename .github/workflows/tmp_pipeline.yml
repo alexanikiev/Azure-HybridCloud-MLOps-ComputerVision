@@ -7,6 +7,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
     steps:
     - name: check out repo
       uses: actions/checkout@v2
@@ -17,6 +18,9 @@ jobs:
         tenant-id: ${{ secrets.ARM_TENANT_ID }}
         subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
     - name: run job
+      env:
+        RESOURCE_GROUP: ${{ vars.AML_RESOURCE_GROUP }}
+        AML_WORKSPACE: ${{ vars.AML_WORKSPACE_NAME }}
       run: |
           bash -x ../../../cli/run-job.sh pipeline.yml
       working-directory: src/pipelines/tmp_pipeline
