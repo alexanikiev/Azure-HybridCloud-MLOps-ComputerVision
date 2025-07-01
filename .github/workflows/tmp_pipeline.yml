@@ -1,0 +1,21 @@
+name: tmp-pipeline
+on:
+  workflow_dispatch:
+permissions:
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: check out repo
+      uses: actions/checkout@v2
+    - name: azure login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: run job
+      run: |
+          bash -x ../../../../run-job.sh pipeline.yml
+      working-directory: src/pipelines/tmp_pipeline
