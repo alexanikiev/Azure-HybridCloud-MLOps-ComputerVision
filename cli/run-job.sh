@@ -11,8 +11,8 @@ if [[ -z "$RESOURCE_GROUP" || -z "$AML_WORKSPACE" ]]; then
   exit 1
 fi
 
-# Construct base command
-base_cmd="az ml job create -f $job --resource-group $RESOURCE_GROUP --workspace-name $AML_WORKSPACE --query name -o tsv"
+# Construct base command with common flags
+base_cmd="az ml job create -f $job --resource-group $RESOURCE_GROUP --workspace-name $AML_WORKSPACE --query name -o tsv --verbose --debug"
 
 # Add experiment name and force rerun if provided
 if [[ -n "$experiment_name" ]]; then
