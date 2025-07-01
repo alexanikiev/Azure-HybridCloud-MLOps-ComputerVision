@@ -1,0 +1,9 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: register_model
+display_name: Register Model
+version: 1
+code: .
+environment: azureml://registries/azureml/environments/sklearn-1.5/labels/latest
+command: >-
+  python dummy.py
