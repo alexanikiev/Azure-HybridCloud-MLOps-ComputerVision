@@ -1,76 +1,61 @@
+#!/bin/bash
+set -e
+
 job=$1
-if [[ -z "$2" ]]
-  then
-    if [[ "$job" =~ pipeline.yml ]]
-    then
-      run_id=$(az ml job create -f $job --query name -o tsv --set settings.force_rerun=True)
-    else
-      run_id=$(az ml job create -f $job --query name -o tsv)
-    fi
-  else
-    experiment_name=$2
-    run_id=$(az ml job create -f $job --query name -o tsv --set experiment_name=$experiment_name --set settings.force_rerun=True)
+experiment_name=$2
+option=$3
+
+# Validate required env vars
+if [[ -z "$RESOURCE_GROUP" || -z "$AML_WORKSPACE" ]]; then
+  echo "Missing required environment variables: RESOURCE_GROUP or AML_WORKSPACE"
+  exit 1
 fi
 
-if [[ -z "$3" ]]
-  then
-    option=$(wait)
-  else
-    option=$3
+# Construct base command
+base_cmd="az ml job create -f $job --resource-group $RESOURCE_GROUP --workspace-name $AML_WORKSPACE --query name -o tsv"
+
+# Add experiment name and force rerun if provided
+if [[ -n "$experiment_name" ]]; then
+  run_id=$($base_cmd --set experiment_name=$experiment_name --set settings.force_rerun=True)
+elif [[ "$job" =~ pipeline.yml ]]; then
+  run_id=$($base_cmd --set settings.force_rerun=True)
+else
+  run_id=$($base_cmd)
 fi
 
-if [[ "$option" == "nowait" ]]
-then
-  if [[ -z "$run_id" ]]
-  then
-    echo "Job creation failed"
-    exit 3
-  else
-    az ml job show -n $run_id --query services.Studio.endpoint
-    exit 0
-  fi
-fi
-
-az ml job show -n $run_id
-
-if [[ -z "$run_id" ]]
-then
+# Early exit if job failed to create
+if [[ -z "$run_id" ]]; then
   echo "Job creation failed"
   exit 3
 fi
 
-status=$(az ml job show -n $run_id --query status -o tsv)
-
-if [[ -z "$status" ]]
-then
-  echo "Status query failed"
-  exit 4
+# If 'nowait' option is passed, just print the studio URI and exit
+if [[ "$option" == "nowait" ]]; then
+  az ml job show --name "$run_id" --resource-group "$RESOURCE_GROUP" --workspace-name "$AML_WORKSPACE" --query services.Studio.endpoint
+  exit 0
 fi
 
-job_uri=$(az ml job show -n $run_id --query services.Studio.endpoint)
+# Poll until job completes
+job_uri=$(az ml job show --name "$run_id" --resource-group "$RESOURCE_GROUP" --workspace-name "$AML_WORKSPACE" --query services.Studio.endpoint)
+echo "$job_uri"
 
-echo $job_uri
+status=$(az ml job show --name "$run_id" --resource-group "$RESOURCE_GROUP" --workspace-name "$AML_WORKSPACE" --query status -o tsv)
 
 running=("Queued" "NotStarted" "Starting" "Preparing" "Running" "Finalizing")
-while [[ ${running[*]} =~ $status ]]
-do
-  echo $job_uri
-  sleep 8 
-  status=$(az ml job show -n $run_id --query status -o tsv)
-  echo $status
+while [[ ${running[*]} =~ $status ]]; do
+  echo "$job_uri"
+  sleep 8
+  status=$(az ml job show --name "$run_id" --resource-group "$RESOURCE_GROUP" --workspace-name "$AML_WORKSPACE" --query status -o tsv)
+  echo "$status"
 done
 
-if [[ $status == "Completed" ]]
-then
+if [[ "$status" == "Completed" ]]; then
   echo "Job completed"
   exit 0
-elif [[ $status == "Failed" ]]
-then
+elif [[ "$status" == "Failed" ]]; then
   echo "Job failed"
   exit 1
 else
-  echo "Job not completed or failed. Status is $status"
+  echo "Job ended with unexpected status: $status"
   exit 2
 fi
-
-echo $job_uri
