@@ -1,0 +1,9 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineComponent.schema.json
+type: pipeline
+name: register_pipeline_component
+display_name: register_pipeline_component
+description: Register pipeline component
+jobs:
+  register_model:
+    type: command
+    component: ./commands/command.yml
